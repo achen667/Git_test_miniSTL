@@ -5,6 +5,8 @@
 #include <cstdlib>   //malloc  free
 #include <new>  //bad_alloc
 
+
+
 namespace miniSTL{
 
 class _malloc_alloc{
@@ -237,8 +239,23 @@ char* _default_alloc::chunk_alloc(size_t size, int &nobjs){
     }
 }
 
+//使用第二级配置器为默认
+using alloc = _default_alloc;
 
+//两种allocator的统一接口   仿照SGI STL
+template<class T, class Alloc>
+class simple_alloc {
 
+public:
+    static T *allocate(size_t n)
+                { return 0 == n? 0 : (T*) Alloc::allocate(n * sizeof (T)); }
+    static T *allocate(void)
+                { return (T*) Alloc::allocate(sizeof (T)); }
+    static void deallocate(T *p, size_t n)
+                { if (0 != n) Alloc::deallocate(p, n * sizeof (T)); }
+    static void deallocate(T *p)
+                { Alloc::deallocate(p, sizeof (T)); }
+};
 
 
 

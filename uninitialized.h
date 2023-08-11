@@ -4,6 +4,8 @@
 #include "type_traits.h"
 #include "construct.h"
 #include <cstring> //memmove
+#include "iterator.h"
+#include <algorithm> //【之后改用自己的】
 
 /*【缺少异常处理  之后补上  commit or rollback】*/
 
@@ -13,7 +15,7 @@ namespace miniSTL{
 template<class ForwardIterator, class Size, class T>
 inline ForwardIterator
 _uninitialized_fill_n_aux(ForwardIterator first, Size n, const T& x, _true_type) {
-    return fill_n(first, n, x); //TODO【  改用 miniSTL::fill_n】
+    return std::fill_n(first, n, x); //TODO【  改用 miniSTL::fill_n】
 }
 template<class ForwardIterator, class Size, class T>
 inline ForwardIterator
@@ -39,7 +41,7 @@ inline ForwardIterator uninitialized_fill_n(ForwardIterator first, Size n, const
 template <class InputIterator, class ForwardIterator>
 inline ForwardIterator
 _uninitialized_copy_aux(InputIterator first, InputIterator last, ForwardIterator result, _true_type){
-    return copy(first, last, result);  //TODO  【改用 miniSTL::copy  (对两种类型的iterator所指进行拷贝 怎么实现）】
+    return std::copy(first, last, result);  //TODO  【改用 miniSTL::copy  (对两种类型的iterator所指进行拷贝 怎么实现）】
 }
 
 template <class InputIterator, class ForwardIterator>
@@ -82,7 +84,7 @@ inline wchar_t* uninitialized_copy(const wchar_t* first, const wchar_t* last,
 template<class ForwardIterator, class Size, class T>
 inline void
 _uninitialized_fill_aux(ForwardIterator first, ForwardIterator last, const T& x, _true_type) {
-    fill(first, last, x); //TODO【  改用 miniSTL::fill】
+    std::fill(first, last, x); //TODO【  改用 miniSTL::fill】
 }
 template<class ForwardIterator, class Size, class T>
 inline void
