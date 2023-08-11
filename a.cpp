@@ -44,5 +44,7 @@ int main(){
     int &r2 = change_value();
     r2 = 5;
     int b = change_value();
+aaa;
+
     return 1;
 }
