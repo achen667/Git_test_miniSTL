@@ -3,6 +3,7 @@
 
 #include <new.h>
 #include "type_traits.h"
+#include "iterator.h"
 namespace miniSTL{
 
 template <class T1, class T2>
@@ -19,7 +20,7 @@ template <class ForwardIterator>
 inline void
 _destroy_aux(ForwardIterator first, ForwardIterator last, _false_type){
     for( ; first < last; ++first)
-        destory(&*first);
+        destroy(&*first);
 }
 
 //由系统自动回收内存 无须析构
