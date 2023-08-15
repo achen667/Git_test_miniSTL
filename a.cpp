@@ -92,13 +92,17 @@ int main(){
     // ls2.insert(ls2.begin(),it,it2);
    
     
-    miniSTL::list<int> ls(5,2) , ls2(5,1);
-    auto it = ls.begin(),it2 = ls2.begin();
-    bool equal = it == it2;
-    bool equal2 = ls == ls2;
+    miniSTL::list<int> ls,ls2;
+    ls.push_back(1);
+    ls.push_back(4);
+    ls.push_back(2);
+    ls2.push_back(3);
+    ls2.push_back(6);
+    ls2.push_back(0);
+    ls.merge(ls2);
     
-    ls.splice(++(ls.begin()),ls2);
     
-   
+    
+    
     return 1;
 }

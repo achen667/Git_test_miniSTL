@@ -95,7 +95,7 @@ private:
         return p;  
     }
     void destroy_node(link_type p){
-        destroy(&(p->data));   //为什么要分两步？ 
+        destroy(&(p->data));   //【为什么要分两步？ 】
         put_node(p);
     }
 
@@ -136,7 +136,7 @@ public:
     reference back() { return *(--end()); }
     const_reference back() const { return *(--end()); }
     //仅仅互换dummy节点 
-    void swap(list<T,Alloc>& x){ std::swap(node, node.x);}//TODO std::swap
+    void swap(list<T,Alloc>& x){ std::swap(node, x.node);}//TODO std::swap
     //在position前插入
     iterator insert(iterator position, const value_type& x){
         link_type new_node = creat_node(x);
@@ -185,6 +185,7 @@ public:
     list(const list<T,Alloc>& x){
         range_initialize(x.begin(), x.end());
     }
+    //TODO list初始化列表构造
 
     ~list() {
         clear();
@@ -213,6 +214,7 @@ public:
     void merge(list& x);
     void reverse();
     void sort();
+    //TODO void sort(cmp);
 
 
     //friend bool operator== (const list& x,const list& y);   // ?
@@ -231,11 +233,12 @@ void list<T,Alloc>::insert(iterator pos, const_iterator first, const_iterator la
         insert(pos, *first);
 }
 
+//将[first,last)中的元素[移动]到position前面 
 template <class T, class Alloc>
 void list<T,Alloc>::transfer(iterator position, iterator first, iterator last){
     if(position != last){ //判断输入是否合法
         last.node->prev->next = position.node;
-        first.node->prev->next = last.node;
+        first.node->prev->next = last.node; 
         position.node->prev->next = first.node;
         list_node *temp = position.node->prev;
         position.node->prev = last.node->prev;
@@ -300,6 +303,60 @@ void list<T, Alloc>::unique() {
       first = next;
     next = first;
   }
+}
+
+template <class T, class Alloc>
+void list<T, Alloc>::merge(list<T, Alloc>& x){
+    iterator first1 = begin();
+    iterator last1 = end();
+    iterator first2 = x.begin();
+    iterator last2 = x.end();
+    while(first1 != last1 && first2 != last2){
+        if(*first2 < *first1){
+            iterator next = first2;
+            transfer(first1, first2, ++next);
+            first2 = next;
+        }
+        else
+            ++first1;
+    }
+    if(first2 != last2) transfer(last1, first2, last2);
+}
+
+template <class T, class Alloc>
+void list<T, Alloc>::reverse() {
+    if (node->next == node || link_type(node->next)->next == node) return;
+    iterator first = begin();
+    ++first;
+    while (first != end()) {
+        iterator old = first;
+        ++first;
+        transfer(begin(), old, first);
+    }
+}    
+
+template <class T, class Alloc>
+void list<T, Alloc>::sort() {
+    //归并排序 
+    if (node->next == node || link_type(node->next)->next == node) return;
+    list<T, Alloc> carry;
+    list<T, Alloc> counter[64];
+    
+    int fill = 0;  //counter中最大索引值 counter[fill]中的元素个数为：2^fill
+    while ( !empty()){
+        int i = 0;
+        carry.splice(carry.begin(), *this, begin()); //取1个元素
+        while( i < fill && !counter[i].empty()){
+            counter[i].merge(carry); //对于同是升序的序列 merge后仍是升序的  
+            carry.swap(counter[i++]);  //准备将排序好的 2^(i+1)个元素与 counter[i+1]中的元素merge排序
+        }
+        counter[i].swap(carry);  //将最新的排序结果存入counter[fill] （fill等于i)
+        if(i == fill)  fill ++;
+    }
+    for (int i = 1; i < fill; ++i) 
+        counter[i].merge(counter[i-1]);
+    swap(counter[fill-1]);
+    
 }
 
 template <class T, class Alloc>
