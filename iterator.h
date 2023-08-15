@@ -92,6 +92,33 @@ distance(InputIterator first, InputIterator last){
     return _distance(first, last, iterator_category(first));
 }
 
+//advance
+template <class InputIterator, class Distance>
+inline void __advance(InputIterator& i, Distance n, input_iterator_tag) {
+  while (n--) ++i;
+}
+template <class BidirectionalIterator, class Distance>
+inline void __advance(BidirectionalIterator& i, Distance n, 
+                      bidirectional_iterator_tag) {
+  if (n >= 0)
+    while (n--) ++i;
+  else
+    while (n++) --i;
+}
+template <class RandomAccessIterator, class Distance>
+inline void __advance(RandomAccessIterator& i, Distance n, 
+                      random_access_iterator_tag) {
+  i += n;
+}
+
+template <class InputIterator, class Distance>
+inline void advance(InputIterator& i, Distance n){
+  _advance(i, n, iterator_category(i));
+}
+
+
+
+
 
 }
 #endif

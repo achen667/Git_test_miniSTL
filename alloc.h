@@ -243,10 +243,12 @@ char* _default_alloc::chunk_alloc(size_t size, int &nobjs){
 using alloc = _default_alloc;
 
 //两种allocator的统一接口   仿照SGI STL
+
 template<class T, class Alloc>
 class simple_alloc {
 
 public:
+    //分配n * sizeof (T)字节的内存，使用函数封装，参数更简洁。
     static T *allocate(size_t n)
                 { return 0 == n? 0 : (T*) Alloc::allocate(n * sizeof (T)); }
     static T *allocate(void)
