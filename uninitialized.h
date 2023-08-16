@@ -81,12 +81,12 @@ inline wchar_t* uninitialized_copy(const wchar_t* first, const wchar_t* last,
 
 
 //POD 
-template<class ForwardIterator, class Size, class T>
+template<class ForwardIterator, class T>
 inline void
 _uninitialized_fill_aux(ForwardIterator first, ForwardIterator last, const T& x, _true_type) {
     std::fill(first, last, x); //TODO【  改用 miniSTL::fill】
 }
-template<class ForwardIterator, class Size, class T>
+template<class ForwardIterator , class T>
 inline void
 _uninitialized_fill_aux(ForwardIterator first, ForwardIterator last, const T& x, _false_type) {
     ForwardIterator cur = first;
@@ -94,13 +94,13 @@ _uninitialized_fill_aux(ForwardIterator first, ForwardIterator last, const T& x,
       construct(&*cur, x);
 }
 
-template <class ForwardIterator, class Size, class T, class T1>
+template <class ForwardIterator, class T, class T1>
 inline void _uninitialized_fill(ForwardIterator first, ForwardIterator last, const T& x,T1*){
     using is_POD = typename _type_traits<T1>::is_POD_type;  
     _uninitialized_fill_aux(first, last, x, is_POD());
 }
 
-template <class ForwardIterator, class Size, class T> 
+template <class ForwardIterator, class T> 
 inline void uninitialized_fill(ForwardIterator first, ForwardIterator last, const T& x){
     _uninitialized_fill(first, last, x, value_type(first));  
 }

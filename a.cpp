@@ -14,6 +14,7 @@
 #include <iostream>
 #include <list>
 #include "list.h"
+#include "deque.h"
  //using namespace miniSTL;
 
 class A
@@ -93,6 +94,7 @@ int main(){
    
     
     miniSTL::list<int> ls,ls2;
+    
     ls.push_back(1);
     ls.push_back(4);
     ls.push_back(2);
@@ -101,8 +103,11 @@ int main(){
     ls2.push_back(0);
     ls.merge(ls2);
     
+    int a[] = { 1,2,3,5};
+    int*pa = a;
+    a[1] = 100;
     
-    
-    
+    miniSTL::deque<int> que  ;
+
     return 1;
 }
