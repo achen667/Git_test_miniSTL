@@ -15,6 +15,7 @@
 #include <list>
 #include "list.h"
 #include "deque.h"
+#include <deque>
  //using namespace miniSTL;
 
 class A
@@ -93,21 +94,21 @@ int main(){
     // ls2.insert(ls2.begin(),it,it2);
    
     
-    miniSTL::list<int> ls,ls2;
+    // largeClass classA;
+    // miniSTL::deque<largeClass> que(41)  ;
+    // que.push_back(classA);
+    // que.push_back(classA);
     
-    ls.push_back(1);
-    ls.push_back(4);
-    ls.push_back(2);
-    ls2.push_back(3);
-    ls2.push_back(6);
-    ls2.push_back(0);
-    ls.merge(ls2);
-    
-    int a[] = { 1,2,3,5};
-    int*pa = a;
-    a[1] = 100;
-    
-    miniSTL::deque<int> que  ;
-
+    // miniSTL::deque<largeClass>::iterator it = que.end();
+    // que.insert(it,32,classA);
+    // it --;
+    // //que.pop_back();
+    // largeClass classB(que[50]);
+   
+    std::deque<int> sque = {1,2,3,4,5,6};
+    auto it = sque.begin();
+    it ++;
+    it ++;
+    it[2] = 99;
     return 1;
 }

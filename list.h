@@ -95,7 +95,8 @@ private:
         return p;  
     }
     void destroy_node(link_type p){
-        destroy(&(p->data));   //【为什么要分两步？ 】
+        destroy(&(p->data));   //【分两步  ：1.析构 
+                                //          2.回收内存 】
         put_node(p);
     }
 

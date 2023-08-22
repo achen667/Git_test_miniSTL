@@ -7,7 +7,7 @@
 #include "iterator.h"
 #include <algorithm> //【之后改用自己的】
 
-/*【缺少异常处理  之后补上  commit or rollback】*/
+/*TODO【缺少异常处理  之后补上  commit or rollback】*/
 
 namespace miniSTL{
 
@@ -104,6 +104,51 @@ template <class ForwardIterator, class T>
 inline void uninitialized_fill(ForwardIterator first, ForwardIterator last, const T& x){
     _uninitialized_fill(first, last, x, value_type(first));  
 }
+
+
+
+// Copies [first1, last1) into [result, result + (last1 - first1)), and
+//  copies [first2, last2) into
+//  [result, result + (last1 - first1) + (last2 - first2)).
+
+template <class InputIterator1, class InputIterator2, class ForwardIterator>
+inline ForwardIterator
+_uninitialized_copy_copy(InputIterator1 first1, InputIterator1 last1,
+                          InputIterator2 first2, InputIterator2 last2,
+                          ForwardIterator result) {
+  ForwardIterator mid = uninitialized_copy(first1, last1, result);
+  
+    return uninitialized_copy(first2, last2, mid);
+  
+}
+
+// Fills [result, mid) with x, and copies [first, last) into
+//  [mid, mid + (last - first)).
+template <class ForwardIterator, class T, class InputIterator>
+inline ForwardIterator 
+_uninitialized_fill_copy(ForwardIterator result, ForwardIterator mid,
+                          const T& x,
+                          InputIterator first, InputIterator last) {
+  uninitialized_fill(result, mid, x);
+  
+    return uninitialized_copy(first, last, mid);
+  
+}
+
+// Copies [first1, last1) into [first2, first2 + (last1 - first1)), and
+//  fills [first2 + (last1 - first1), last2) with x.
+template <class InputIterator, class ForwardIterator, class T>
+inline void
+_uninitialized_copy_fill(InputIterator first1, InputIterator last1,
+                          ForwardIterator first2, ForwardIterator last2,
+                          const T& x) {
+  ForwardIterator mid2 = uninitialized_copy(first1, last1, first2);
+  
+    uninitialized_fill(mid2, last2, x);
+  
+  
+}
+
 
 
 }
