@@ -1,2 +1,12 @@
-# Git_test_miniSTL
-undone, for Git test.
+# miniSTL
+Accomplished:
+vector
+list
+deque
+rbtree
+set
+
+To be accomplished:
+hashtable
+function
+code testing
