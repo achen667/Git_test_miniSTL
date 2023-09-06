@@ -9,6 +9,7 @@
 
 namespace miniSTL{
 
+/*第一级配置器*/
 class _malloc_alloc{
 public:
     using malloc_handler = void (*)();
@@ -22,7 +23,7 @@ private:
 public:
     static void * allocate(size_t n){
         void *result = malloc(n);   //【malloc是如何实现的？】
-        if(0 == result) result = oom_malloc(n);
+        if(nullptr == result) result = oom_malloc(n);
         return result;
     }
 
@@ -32,7 +33,7 @@ public:
 
     static void * reallocate(void *p, size_t , size_t new_sz){
         void * result = realloc(p, new_sz); //【直接调用realloc】
-        if(0 == result) oom_realloc(p, new_sz);
+        if(nullptr == result) oom_realloc(p, new_sz);
         return result;
     }
 
@@ -43,8 +44,8 @@ public:
     }
 
 };
-//TODO 对oom进行测试 配置oom handler
-void (* _malloc_alloc::_malloc_alloc_oom_handler)() = 0;  //【有问题不】
+//配置oom_handler是用户的责任
+void (* _malloc_alloc::_malloc_alloc_oom_handler)() = nullptr;  // 
 
 inline void * _malloc_alloc::oom_malloc(size_t n){
     malloc_handler my_alloc_handler;
@@ -52,8 +53,8 @@ inline void * _malloc_alloc::oom_malloc(size_t n){
 
     for(;;){
         my_alloc_handler = _malloc_alloc_oom_handler;
-        // if(!my_alloc_handler)   throw std::bad_alloc();     //TODO   这里要处理 会导致报错
-        // (*my_alloc_handler)();
+        if(!my_alloc_handler)   throw std::bad_alloc();     //没有配置oom处理函数，则直接抛出异常
+        (*my_alloc_handler)();
         result = malloc(n);
         if(result) return result;
     }
@@ -79,7 +80,7 @@ using malloc_alloc = _malloc_alloc;
 
 class _default_alloc{
 private:
-    enum _freelist_setting {   //【effective c++ 哪条内容？】
+    enum _freelist_setting {   //常量定义惯用方法 
         _ALIGN = 8,
         _MAX_BYTES = 128,
         _NFREELISTS = _MAX_BYTES / _ALIGN
@@ -98,7 +99,7 @@ private:
     static obj * volatile free_list[_NFREELISTS];
     //计算将使用的free-lists编号
     static size_t FREELIST_INDEX(size_t bytes){
-        return (((bytes) + _ALIGN - 1) / _ALIGN - 1); //要用static_cast转size_t么
+        return (((bytes) + static_cast<size_t>(_ALIGN) - 1) / static_cast<size_t>(_ALIGN) - 1); //static_cast
     }
 
     static void *refill(size_t n);
@@ -112,7 +113,7 @@ private:
 public:
     static void * allocate(size_t n);
     static void deallocate(void *p, size_t n);
-    static void * reallocate(void *p, size_t old_sz, size_t new_sz); //TODO reallocate  ?
+    static void * reallocate(void *p, size_t old_sz, size_t new_sz); 
     
 };
 
@@ -153,6 +154,7 @@ inline void _default_alloc::deallocate(void *p, size_t n){
     *my_free_list = q;   //  q is now free
 
 }
+
 
 void* _default_alloc::refill(size_t n){
     int nobjs = 20;
@@ -210,7 +212,7 @@ char* _default_alloc::chunk_alloc(size_t size, int &nobjs){
         }
 
         start_free = (char *)malloc(bytes_to_get); //【malloc】
-        if(0 == start_free){ //从heap分配失败
+        if(nullptr == start_free){ //从heap分配失败
             int i ;
             obj * volatile * my_free_list, *p;
             //从空闲链表里收集[一个块]的内存（之前分配太多了还没用掉，且比当前size要大的）
@@ -218,7 +220,7 @@ char* _default_alloc::chunk_alloc(size_t size, int &nobjs){
             for(i = size; i <= _MAX_BYTES; i += _ALIGN){//【用大块来补小块 会带来碎片吧】
                 my_free_list = free_list + FREELIST_INDEX(i);
                 p = *my_free_list;
-                if(0 != p){
+                if(nullptr != p){
                     *my_free_list = p -> free_list_link; //取出一个，p，更新空闲节点
                     start_free = (char *)p;
                     end_free = start_free + i; //【这里会产生碎片吗？ i并没有对齐】
@@ -226,7 +228,7 @@ char* _default_alloc::chunk_alloc(size_t size, int &nobjs){
                 }
             }
             //空闲链表也没剩了 oom
-            end_free = 0; //【c++11 nullptr】
+            end_free = nullptr; 
             //第一级配置器 
             start_free = (char *)malloc_alloc::allocate(bytes_to_get);
 
@@ -237,6 +239,21 @@ char* _default_alloc::chunk_alloc(size_t size, int &nobjs){
         //递归调用 进入前两个if分支 正确重置nobjs
         return (chunk_alloc(size, nobjs));
     }
+}
+
+void* _default_alloc::reallocate(void *p, size_t old_sz, size_t new_sz){
+    void * result;
+    size_t copy_sz;
+
+    if (old_sz > static_cast<size_t>(_MAX_BYTES) && new_sz > static_cast<size_t>(_MAX_BYTES)) {
+        return(realloc(p, new_sz));
+    }
+    if (ROUND_UP(old_sz) == ROUND_UP(new_sz)) return(p);
+    result = allocate(new_sz);
+    copy_sz = new_sz > old_sz? old_sz : new_sz;
+    memcpy(result, p, copy_sz);
+    deallocate(p, old_sz);
+    return(result);
 }
 
 //使用第二级配置器为默认

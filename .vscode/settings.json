@@ -41,6 +41,12 @@
         "typeinfo": "cpp",
         "iterator": "cpp",
         "iostream": "cpp",
-        "list": "cpp"
+        "list": "cpp",
+        "cerrno": "cpp",
+        "climits": "cpp",
+        "queue": "cpp",
+        "random": "cpp",
+        "functional": "cpp",
+        "ios": "cpp"
     }
 }

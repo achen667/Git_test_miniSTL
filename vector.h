@@ -3,10 +3,10 @@
 
 #include "alloc.h"
 #include "construct.h"
-
+//TODO assign()
 namespace miniSTL{
 
-template <class T, class Alloc = alloc>  //【如果把allocator用simple_alloc封装的话，这里改一下】
+template <class T, class Alloc = alloc> 
 class vector{
 public:
     using value_type = T;
@@ -52,7 +52,7 @@ public:
     //     return const_reverse_iterator(begin()); 
     // }
     size_type size() const { return size_type(end() - begin()); }
-    //【好像用不着】 size_type max_size() const { return size_type(-1) / sizeof(T); }
+    // size_type max_size() const { return size_type(-1) / sizeof(T); }
     size_type capacity() const { return size_type(end_of_storage - begin()); }
     bool empty() const { return begin() == end(); }
     reference operator[](size_type n) { return *(begin() + n); }
@@ -63,19 +63,31 @@ public:
     explicit vector(size_type n){fill_initialize(n, value_type());}           //构造n个默认对象
     vector(size_type n, const value_type& value){fill_initialize(n,value);}
 
-    vector(const vector<T, Alloc>& x){    //【直接改成vector& x 也行的吧  剩下的也一样 如果改的话】
+    vector(const vector<T, Alloc>& x){    // vecotr(const vector& x)
         start = allocate_and_copy(x.end() - x.begin(), x.begin(), x.end());
         finish = start + (x.end() - x.begin());
         end_of_storage = finish;
     }
-    //TODO && vector移动初始化
+    
+    //移动初始化
+    vector(vector && x) noexcept{
+        start = x.start;
+        finish = x.finish;
+        end_of_storage = x.end_of_storage;
+        x.start = x.finish = x.end_of_storage = nullptr;
+    }
+    vector(std::initializer_list<T> il){
+        start = allocate_and_copy(il.end() - il.begin(), il.begin, il.end());
+        finish = end_of_storage = start + il.size();
+    }
 
     ~vector(){
-        destroy(start, finish);
+        miniSTL::destroy(start, finish);
         deallocate();
     }
 
     vector& operator=(const vector& x); 
+    vector& operator=(vector&& x) noexcept;
     void reserve(size_type n );//TODO vector::reserve
     reference front() { return *begin(); }
     const_reference front() const { return *begin(); }
@@ -118,13 +130,15 @@ public:
     void insert(iterator position, const_iterator first, const_iterator last);
 
     iterator erase(iterator position){
-        // if(position + 1 != end())
-        //     std::copy(position + 1, finish, position);
-        // --finish;
-        // destroy(finish);
-        // return position;
+        if(position + 1 != end())
+            std::copy(position + 1, finish, position);
+        --finish;
+        destroy(finish);
+        return position;
 
-        erase(position,position + 1);  // :)
+        // erase(position,position + 1);  // :)
+        // return position;
+        
     }
     iterator erase(iterator first, iterator last){
         iterator i = std::copy(last, finish, first);
@@ -144,16 +158,26 @@ public:
 protected:
     iterator allocate_and_fill(size_type n, const T& x) {
         iterator result = data_allocator::allocate(n);
-        //TODO 异常处理  commit or rollback
-        uninitialized_fill_n(result, n, x);
-        return result;
+        try{
+            uninitialized_fill_n(result, n, x);
+            return result;
+        }
+        catch(...){
+            data_allocator::deallocate(result, n);
+            throw;
+        }
     }
     iterator allocate_and_copy(size_type n, const_iterator first, const_iterator last){
         //allocate n * sizeof (T)个字节（bytes），没有问题
         iterator result = data_allocator::allocate(n);
-        //TODO 异常处理
-        uninitialized_copy(first, last, result);
-        return result;
+        try{
+            uninitialized_copy(first, last, result);
+            return result;
+        }
+        catch(...){
+            data_allocator::deallocate(result, n);
+            throw;
+        }
     }
 };
 
@@ -194,7 +218,53 @@ vector<T,Alloc>& vector<T,Alloc>::operator=(const vector<T, Alloc>& x){
   return *this;
 }
 
-//TODO【 移动赋值】
+// 移动赋值
+template<class T,class Alloc>
+vector<T,Alloc>& vector<T,Alloc>::operator=(vector<T,Alloc>&& x) noexcept{
+    if(this != &x){
+        miniSTL::destroy(start,finish);
+        deallocate();
+        start = x.start;
+        finish = x.finish;
+        end_of_storage = x.end_of_storage;
+        x.start = x.finish = x.end_of_storage;
+    }
+    return *this;
+}
+
+
+template <class T, class Alloc>
+void vector<T, Alloc>::insert_aux(iterator position, const T& x) {
+    if (finish != end_of_storage) {
+        construct(finish, *(finish - 1));
+        ++finish;
+        T x_copy = x;
+        std::copy_backward(position, finish - 2, finish - 1); //TODO std::copybackward
+        *position = x_copy;
+    }
+    else {
+        const size_type old_size = size();
+        const size_type len = old_size != 0 ? 2 * old_size : 1;
+        iterator new_start = data_allocator::allocate(len);
+        iterator new_finish = new_start;
+        try{
+            new_finish = uninitialized_copy(start, position, new_start);
+            construct(new_finish, x);
+            ++new_finish;
+            new_finish = uninitialized_copy(position, finish, new_finish);
+        }
+        catch(...) {
+            destroy(new_start, new_finish); 
+            data_allocator::deallocate(new_start, len);
+            throw;
+        }
+        destroy(begin(), end());
+        deallocate();
+        start = new_start;
+        finish = new_finish;
+        end_of_storage = new_start + len;
+    }
+}
 
 template <class T, class Alloc>
 void vector<T, Alloc>::insert(iterator position, size_type n, const T& x) {
@@ -226,14 +296,19 @@ void vector<T, Alloc>::insert(iterator position, size_type n, const T& x) {
 
             iterator new_start = data_allocator::allocate(len);
             iterator new_finish = new_start;
-            //TODO commit or rollback
-            //搬运旧元素 头到插入点之前
-            new_finish = uninitialized_copy(start, position, new_start);
-            //增加新元素
-            new_finish = uninitialized_fill_n(new_finish, n, x);
-            //搬运旧元素 插入点之后到尾
-            new_finish = uninitialized_copy(position, finish, new_finish);
-
+            try{
+                //搬运旧元素 头到插入点之前
+                new_finish = uninitialized_copy(start, position, new_start);
+                //增加新元素
+                new_finish = uninitialized_fill_n(new_finish, n, x);
+                //搬运旧元素 插入点之后到尾
+                new_finish = uninitialized_copy(position, finish, new_finish);
+            }
+            catch(...) {
+                destroy(new_start, new_finish);
+                data_allocator::deallocate(new_start, len);
+                throw;
+            }            
             destroy(start, finish);
             deallocate();
             start = new_start;
@@ -273,11 +348,16 @@ void vector<T, Alloc>::insert(iterator position,
         const size_type len = old_size + std::max(old_size, n);
         iterator new_start = data_allocator::allocate(len);
         iterator new_finish = new_start;
-
-        new_finish = uninitialized_copy(start, position, new_start);
-        new_finish = uninitialized_copy(first, last, new_finish);
-        new_finish = uninitialized_copy(position, finish, new_finish);
-
+        try{
+            new_finish = uninitialized_copy(start, position, new_start);
+            new_finish = uninitialized_copy(first, last, new_finish);
+            new_finish = uninitialized_copy(position, finish, new_finish);
+        }
+        catch(...) {
+            destroy(new_start, new_finish);
+            data_allocator::deallocate(new_start, len);
+            throw;
+        }
         destroy(start, finish);
         deallocate();
         start = new_start;
